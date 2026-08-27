@@ -1,0 +1,40 @@
+{
+  "technical": [
+    "python",
+    "java",
+    "javascript",
+    "react",
+    "react.js",
+    "node.js",
+    "express",
+    "django",
+    "flask",
+    "fastapi",
+    "html",
+    "css",
+    "bootstrap",
+    "tailwind css",
+    "sql",
+    "mysql",
+    "mongodb",
+    "git",
+    "github",
+    "rest api",
+    "machine learning",
+    "nlp",
+    "c#",
+    "asp.net core",
+    "docker",
+    "linux",
+    "bash",
+    "postman"
+  ],
+  "soft": [
+    "communication",
+    "teamwork",
+    "problem solving",
+    "leadership",
+    "adaptability",
+    "time management"
+  ]
+}

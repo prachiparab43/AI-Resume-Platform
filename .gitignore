@@ -1,0 +1,30 @@
+# Environment variables
+.env
+*.env
+
+# Node
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# React/Vite
+client/dist/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Uploaded resumes - never push candidate files
+server/uploads/
+uploads/
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
