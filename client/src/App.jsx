@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import HRDashboard from "./pages/HRDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 
 function App() {
   return (
@@ -17,13 +19,14 @@ function App() {
 
         <Route
           path="/"
-          element={<Navigate to="/login" />}
+          element={<Navigate to="/login" replace />}
         />
 
         <Route
           path="/login"
           element={<Login />}
         />
+
         <Route
           path="/register"
           element={<Register />}
@@ -31,12 +34,25 @@ function App() {
 
         <Route
           path="/candidate"
-          element={<CandidateDashboard />}
+          element={
+            <ProtectedRoute allowedRole="candidate">
+              <CandidateDashboard />
+            </ProtectedRoute>
+          }
         />
 
         <Route
           path="/hr"
-          element={<HRDashboard />}
+          element={
+            <ProtectedRoute allowedRole="hr">
+              <HRDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
         />
 
       </Routes>

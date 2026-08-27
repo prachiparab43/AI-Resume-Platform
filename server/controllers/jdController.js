@@ -390,3 +390,57 @@ exports.getRankings = (req, res) => {
         });
     }
 };
+exports.getAllJobs = (req, res) => {
+    const sql = `
+        SELECT
+            jd_id,
+            title,
+            created_at
+        FROM JobDescriptions
+        ORDER BY created_at DESC
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error(
+                "Fetch jobs error:",
+                err
+            );
+
+            return res.status(500).json({
+                message: "Failed to fetch jobs"
+            });
+        }
+
+        return res.status(200).json({
+            total_jobs: results.length,
+            jobs: results
+        });
+    });
+};
+exports.getAllJobs = (req, res) => {
+  const sql = `
+    SELECT
+      jd_id,
+      title,
+      raw_text,
+      created_at
+    FROM JobDescriptions
+    ORDER BY created_at DESC
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Fetch jobs error:", err);
+
+      return res.status(500).json({
+        message: "Failed to fetch jobs",
+      });
+    }
+
+    return res.status(200).json({
+      total_jobs: results.length,
+      jobs: results,
+    });
+  });
+};

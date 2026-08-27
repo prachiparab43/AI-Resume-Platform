@@ -259,3 +259,58 @@ body {
 .status-badge.not_recommended {
   background: #fee2e2;
 }
+.job-preview {
+  margin-top: 20px;
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.job-preview h3 {
+  margin-top: 0;
+}
+
+.job-description {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.ats-status {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.ats-strong {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ats-moderate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ats-low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  margin-top: 12px;
+  background: #e5e7eb;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 20px;
+  transition: width 0.4s ease;
+}

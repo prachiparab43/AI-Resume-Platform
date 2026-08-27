@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
 
 function CandidateDashboard() {
@@ -6,13 +6,69 @@ function CandidateDashboard() {
   const [message, setMessage] = useState("");
   const [uploadResult, setUploadResult] = useState(null);
 
+  const [jobs, setJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [jdId, setJdId] = useState("");
+  const selectedJob = jobs.find(
+  (job) => String(job.jd_id) === String(jdId)
+  
+);
+  const getATSStatus = (score) => {
+  const value = Number(score);
+
+  if (value >= 75) {
+    return {
+      text: "Strong Match",
+      className: "ats-strong",
+    };
+  }
+
+  if (value >= 50) {
+    return {
+      text: "Moderate Match",
+      className: "ats-moderate",
+    };
+  }
+
+  return {
+    text: "Needs Improvement",
+    className: "ats-low",
+  };
+};
+
+
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
 
+  // Load all available jobs
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await api.get("/jd");
+
+        setJobs(response.data.jobs || []);
+      } catch (error) {
+        console.error("Failed to load jobs:", error);
+
+        setMessage(
+          error.response?.data?.message ||
+            "Failed to load available jobs"
+        );
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selectedFile = e.target.files[0];
+
+    setFile(selectedFile);
     setMessage("");
+    setUploadResult(null);
+    setAnalysis(null);
   };
 
   // Upload Resume
@@ -25,7 +81,10 @@ function CandidateDashboard() {
     }
 
     try {
+      setMessage("Uploading and analyzing resume...");
+
       const formData = new FormData();
+
       formData.append("resume", file);
 
       const response = await api.post(
@@ -40,7 +99,7 @@ function CandidateDashboard() {
         "Resume uploaded and analyzed successfully"
       );
     } catch (error) {
-      console.error(error);
+      console.error("Resume upload error:", error);
 
       setMessage(
         error.response?.data?.message ||
@@ -57,7 +116,7 @@ function CandidateDashboard() {
     }
 
     if (!jdId) {
-      setMessage("Please enter a Job Description ID");
+      setMessage("Please select a job");
       return;
     }
 
@@ -74,9 +133,11 @@ function CandidateDashboard() {
 
       setAnalysis(response.data.analysis);
 
-      setMessage("ATS analysis completed successfully");
+      setMessage(
+        "ATS analysis completed successfully"
+      );
     } catch (error) {
-      console.error(error);
+      console.error("ATS analysis error:", error);
 
       setMessage(
         error.response?.data?.message ||
@@ -96,9 +157,12 @@ function CandidateDashboard() {
 
   return (
     <div className="dashboard-container">
+      {/* Header */}
+
       <div className="dashboard-header">
         <div>
           <h1>Candidate Dashboard</h1>
+
           <p>
             Upload your resume and check your ATS match.
           </p>
@@ -135,11 +199,13 @@ function CandidateDashboard() {
         </form>
 
         {message && (
-          <p className="message">{message}</p>
+          <p className="message">
+            {message}
+          </p>
         )}
       </div>
 
-      {/* Extracted Skills */}
+      {/* Resume Details */}
 
       {uploadResult && (
         <div className="dashboard-card">
@@ -164,14 +230,16 @@ function CandidateDashboard() {
 
           <div className="skills-container">
             {uploadResult.skills?.length > 0 ? (
-              uploadResult.skills.map((skill, index) => (
-                <span
-                  className="skill-tag"
-                  key={index}
-                >
-                  {skill.skill_name}
-                </span>
-              ))
+              uploadResult.skills.map(
+                (skill, index) => (
+                  <span
+                    className="skill-tag"
+                    key={`${skill.skill_name}-${index}`}
+                  >
+                    {skill.skill_name}
+                  </span>
+                )
+              )
             ) : (
               <p>No skills detected.</p>
             )}
@@ -179,35 +247,72 @@ function CandidateDashboard() {
         </div>
       )}
 
-      {/* Job Matching */}
+      {/* Job Selection */}
 
       {uploadResult && (
         <div className="dashboard-card">
           <h2>3. Check ATS Score</h2>
 
           <p>
-            Enter the Job Description ID you want to
-            compare your resume against.
+            Select the job you want to compare your
+            resume against.
           </p>
 
-          <input
-            className="jd-input"
-            type="number"
-            min="1"
-            placeholder="Example: 2"
+          <select
+            className="job-select"
             value={jdId}
             onChange={(e) => setJdId(e.target.value)}
-          />
+            disabled={loadingJobs}
+          >
+            <option value="">
+              {loadingJobs
+                ? "Loading jobs..."
+                : "Select a job"}
+            </option>
+
+            {jobs.map((job) => (
+              <option
+                key={job.jd_id}
+                value={job.jd_id}
+              >
+                {job.title}
+              </option>
+            ))}
+          </select>
+          {selectedJob && (
+            <div className="job-preview">
+              <h3>{selectedJob.title}</h3>
+
+              <p>
+                <strong>Job Description</strong>
+              </p>
+
+              <p className="job-description">
+                {selectedJob.raw_text}
+              </p>
+            </div>
+          )}
 
           <button
             className="primary-btn"
             onClick={handleAnalyze}
-            disabled={analyzing}
+            disabled={
+              analyzing ||
+              loadingJobs ||
+              !jdId
+            }
           >
             {analyzing
               ? "Analyzing..."
               : "Analyze Resume"}
           </button>
+
+          {!loadingJobs && jobs.length === 0 && (
+            <p>
+              No job descriptions are currently
+              available.
+            </p>
+          )}
         </div>
       )}
 
@@ -218,8 +323,17 @@ function CandidateDashboard() {
           <h2>ATS Analysis Result</h2>
 
           <div className="score-main">
-            <h1>{analysis.ats_score}%</h1>
+            <h1>{analysis.ats_score ?? 0}%</h1>
+
             <p>Overall ATS Score</p>
+
+            <span
+              className={`ats-status ${
+                getATSStatus(analysis.ats_score).className
+              }`}
+            >
+              {getATSStatus(analysis.ats_score).text}
+            </span>
           </div>
 
           <div className="score-grid">
@@ -235,17 +349,23 @@ function CandidateDashboard() {
 
             <ScoreCard
               title="Experience"
-              score={analysis.experience_match_pct}
+              score={
+                analysis.experience_match_pct
+              }
             />
 
             <ScoreCard
               title="Education"
-              score={analysis.education_match_pct}
+              score={
+                analysis.education_match_pct
+              }
             />
 
             <ScoreCard
               title="Projects"
-              score={analysis.project_relevance_pct}
+              score={
+                analysis.project_relevance_pct
+              }
             />
 
             <ScoreCard
@@ -253,6 +373,8 @@ function CandidateDashboard() {
               score={analysis.completeness_pct}
             />
           </div>
+
+          {/* Matched Skills */}
 
           <h3>Matched Skills</h3>
 
@@ -262,7 +384,7 @@ function CandidateDashboard() {
                 (skill, index) => (
                   <span
                     className="skill-tag"
-                    key={index}
+                    key={`${skill}-${index}`}
                   >
                     {skill}
                   </span>
@@ -273,6 +395,8 @@ function CandidateDashboard() {
             )}
           </div>
 
+          {/* Missing Skills */}
+
           <h3>Missing Skills</h3>
 
           <div className="skills-container">
@@ -281,16 +405,20 @@ function CandidateDashboard() {
                 (skill, index) => (
                   <span
                     className="missing-skill"
-                    key={index}
+                    key={`${skill}-${index}`}
                   >
                     {skill}
                   </span>
                 )
               )
             ) : (
-              <p>No missing skills detected.</p>
+              <p>
+                No missing skills detected.
+              </p>
             )}
           </div>
+
+          {/* Recommendations */}
 
           <h3>Recommendations</h3>
 
@@ -312,12 +440,26 @@ function CandidateDashboard() {
     </div>
   );
 }
-
 function ScoreCard({ title, score }) {
+  const safeScore = Math.min(
+    100,
+    Math.max(0, Number(score) || 0)
+  );
+
   return (
     <div className="score-card">
       <h3>{title}</h3>
-      <p>{score ?? 0}%</p>
+
+      <p>{safeScore}%</p>
+
+      <div className="progress-track">
+        <div
+          className="progress-fill"
+          style={{
+            width: `${safeScore}%`,
+          }}
+        />
+      </div>
     </div>
   );
 }
