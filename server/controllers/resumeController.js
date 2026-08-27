@@ -322,3 +322,57 @@ exports.analyzeResume = async (req, res) => {
         });
     }
 };
+exports.getCandidateHistory = (req, res) => {
+  try {
+    const userId = req.user.user_id;
+
+    const sql = `
+      SELECT
+        sr.result_id,
+        sr.resume_id,
+        sr.jd_id,
+        jd.title AS job_title,
+        sr.ats_score,
+        sr.skill_match_pct,
+        sr.keyword_match_pct,
+        sr.experience_match_pct,
+        sr.education_match_pct,
+        sr.project_relevance_pct,
+        sr.missing_skills,
+        sr.recommendations,
+        sr.created_at
+      FROM ScreeningResults sr
+
+      INNER JOIN Resumes r
+        ON sr.resume_id = r.resume_id
+
+      INNER JOIN JobDescriptions jd
+        ON sr.jd_id = jd.jd_id
+
+      WHERE r.user_id = ?
+
+      ORDER BY sr.created_at DESC
+    `;
+
+    db.query(sql, [userId], (err, results) => {
+      if (err) {
+        console.error("History fetch error:", err);
+
+        return res.status(500).json({
+          message: "Failed to fetch ATS history",
+        });
+      }
+
+      return res.status(200).json({
+        total_results: results.length,
+        history: results,
+      });
+    });
+  } catch (error) {
+    console.error("Candidate history error:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch ATS history",
+    });
+  }
+};

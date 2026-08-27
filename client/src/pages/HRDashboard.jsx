@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../services/api";
 
 function HRDashboard() {
@@ -8,12 +8,37 @@ function HRDashboard() {
 
   const [createdJD, setCreatedJD] = useState(null);
 
-  const [jdId, setJdId] = useState("");
+  const [jobs, setJobs] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
   const [rankings, setRankings] = useState([]);
   const [loadingRankings, setLoadingRankings] =
     useState(false);
 
-  // Create Job Description
+  useEffect(() => {
+    fetchMyJobs();
+  }, []);
+
+  const fetchMyJobs = async () => {
+    try {
+      setLoadingJobs(true);
+
+      const response = await api.get("/jd/my-jobs");
+
+      setJobs(response.data.jobs || []);
+    } catch (error) {
+      console.error("Fetch HR jobs error:", error);
+
+      setMessage(
+        error.response?.data?.message ||
+          "Failed to load your jobs"
+      );
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
   const handleCreateJD = async (e) => {
     e.preventDefault();
 
@@ -26,13 +51,11 @@ function HRDashboard() {
 
     try {
       const response = await api.post("/jd", {
-        title: title,
+        title,
         raw_text: description,
       });
 
       setCreatedJD(response.data);
-
-      setJdId(response.data.jd_id);
 
       setMessage(
         "Job description created successfully"
@@ -41,6 +64,7 @@ function HRDashboard() {
       setTitle("");
       setDescription("");
 
+      await fetchMyJobs();
     } catch (error) {
       console.error(error);
 
@@ -51,12 +75,9 @@ function HRDashboard() {
     }
   };
 
-  // Get Candidate Rankings
   const handleGetRankings = async () => {
-    if (!jdId) {
-      setMessage(
-        "Please enter a Job Description ID"
-      );
+    if (!selectedJobId) {
+      setMessage("Please select a job first");
       return;
     }
 
@@ -65,15 +86,11 @@ function HRDashboard() {
       setMessage("");
 
       const response = await api.get(
-        `/jd/${jdId}/rankings`
+        `/jd/${selectedJobId}/rankings`
       );
 
-      setRankings(
-        response.data.rankings || []
-      );
-
+      setRankings(response.data.rankings || []);
       setMessage(response.data.message);
-
     } catch (error) {
       console.error(error);
 
@@ -83,7 +100,6 @@ function HRDashboard() {
         error.response?.data?.message ||
           "Failed to load rankings"
       );
-
     } finally {
       setLoadingRankings(false);
     }
@@ -96,11 +112,15 @@ function HRDashboard() {
     window.location.href = "/login";
   };
 
+  const selectedJob = jobs.find(
+    (job) =>
+      String(job.jd_id) ===
+      String(selectedJobId)
+  );
+
   return (
     <div className="dashboard-container">
-
       <div className="dashboard-header">
-
         <div>
           <h1>HR Dashboard</h1>
 
@@ -115,17 +135,14 @@ function HRDashboard() {
         >
           Logout
         </button>
-
       </div>
 
-      {/* CREATE JD */}
+      {/* Create Job */}
 
       <div className="dashboard-card">
-
         <h2>1. Create Job Description</h2>
 
         <form onSubmit={handleCreateJD}>
-
           <input
             className="form-input"
             type="text"
@@ -151,22 +168,17 @@ function HRDashboard() {
           >
             Create & Analyze JD
           </button>
-
         </form>
 
         {message && (
-          <p className="message">
-            {message}
-          </p>
+          <p className="message">{message}</p>
         )}
-
       </div>
 
-      {/* CREATED JD */}
+      {/* Created Job */}
 
       {createdJD && (
         <div className="dashboard-card">
-
           <h2>Job Created</h2>
 
           <p>
@@ -182,13 +194,12 @@ function HRDashboard() {
           <h3>Required Skills</h3>
 
           <div className="skills-container">
-
             {createdJD.skills?.length > 0 ? (
               createdJD.skills.map(
                 (skill, index) => (
                   <span
                     className="skill-tag"
-                    key={index}
+                    key={`${skill.skill_name}-${index}`}
                   >
                     {skill.skill_name}
                   </span>
@@ -197,56 +208,87 @@ function HRDashboard() {
             ) : (
               <p>No skills detected.</p>
             )}
-
           </div>
-
         </div>
       )}
 
-      {/* RANKINGS */}
+      {/* My Jobs */}
 
       <div className="dashboard-card">
-
-        <h2>2. Candidate Rankings</h2>
+        <h2>2. My Job Descriptions</h2>
 
         <p>
-          Enter one of your Job Description IDs.
+          Select one of your jobs to view candidate
+          rankings.
         </p>
 
-        <input
-          className="jd-input"
-          type="number"
-          min="1"
-          placeholder="JD ID"
-          value={jdId}
-          onChange={(e) =>
-            setJdId(e.target.value)
-          }
-        />
+        <select
+          className="job-select"
+          value={selectedJobId}
+          onChange={(e) => {
+            setSelectedJobId(e.target.value);
+            setRankings([]);
+          }}
+          disabled={loadingJobs}
+        >
+          <option value="">
+            {loadingJobs
+              ? "Loading jobs..."
+              : "Select a job"}
+          </option>
+
+          {jobs.map((job) => (
+            <option
+              key={job.jd_id}
+              value={job.jd_id}
+            >
+              {job.title}
+            </option>
+          ))}
+        </select>
+
+        {selectedJob && (
+          <div className="job-preview">
+            <h3>{selectedJob.title}</h3>
+
+            <p>
+              <strong>Job Description</strong>
+            </p>
+
+            <p className="job-description">
+              {selectedJob.raw_text}
+            </p>
+          </div>
+        )}
 
         <button
           className="primary-btn"
           onClick={handleGetRankings}
-          disabled={loadingRankings}
+          disabled={
+            loadingRankings ||
+            !selectedJobId
+          }
         >
           {loadingRankings
             ? "Loading..."
             : "View Rankings"}
         </button>
 
+        {!loadingJobs && jobs.length === 0 && (
+          <p>
+            You have not created any jobs yet.
+          </p>
+        )}
       </div>
 
-      {/* RANKING TABLE */}
+      {/* Rankings */}
 
       {rankings.length > 0 && (
         <div className="dashboard-card">
-
           <h2>Ranked Candidates</h2>
 
           <div className="table-wrapper">
-
             <table className="ranking-table">
-
               <thead>
                 <tr>
                   <th>Rank</th>
@@ -255,84 +297,101 @@ function HRDashboard() {
                   <th>ATS Score</th>
                   <th>Skill Match</th>
                   <th>Keyword Match</th>
+                  <th>Experience</th>
+                  <th>Education</th>
+                  <th>Projects</th>
                   <th>Status</th>
+                  <th>Details</th>
                 </tr>
               </thead>
 
               <tbody>
+  {rankings.map((candidate) => (
+    <tr key={candidate.resume_id}>
 
-                {rankings.map(
-                  (candidate) => (
+      <td>
+        #{candidate.rank_position}
+      </td>
 
-                    <tr
-                      key={
-                        candidate.resume_id
-                      }
-                    >
-                      <td>
-                        #
-                        {
-                          candidate.rank_position
-                        }
-                      </td>
+      <td>
+        {candidate.candidate_name}
+      </td>
 
-                      <td>
-                        {
-                          candidate.candidate_name
-                        }
-                      </td>
+      <td>
+        {candidate.email}
+      </td>
 
-                      <td>
-                        {candidate.email}
-                      </td>
+      <td>
+        {candidate.final_score}%
+      </td>
 
-                      <td>
-                        {
-                          candidate.final_score
-                        }
-                        %
-                      </td>
+      <td>
+        {candidate.skill_match_pct}%
+      </td>
 
-                      <td>
-                        {
-                          candidate.skill_match_pct
-                        }
-                        %
-                      </td>
+      <td>
+        {candidate.keyword_match_pct}%
+      </td>
 
-                      <td>
-                        {
-                          candidate.keyword_match_pct
-                        }
-                        %
-                      </td>
+      <td>
+        {candidate.experience_match_pct}%
+      </td>
 
-                      <td>
-                        <span
-                          className={`status-badge ${
-                            candidate.status
-                          }`}
-                        >
-                          {
-                            candidate.status
-                          }
-                        </span>
-                      </td>
+      <td>
+        {candidate.education_match_pct}%
+      </td>
 
-                    </tr>
+      <td>
+        {candidate.project_relevance_pct}%
+      </td>
 
-                  )
-                )}
+      <td>
+        <span
+          className={`status-badge ${candidate.status}`}
+        >
+          {candidate.status}
+        </span>
+      </td>
 
-              </tbody>
+      <td>
+        <details>
+          <summary className="details-link">
+            View
+          </summary>
 
-            </table>
+          <div className="candidate-details">
+
+            <p>
+              <strong>Missing Skills:</strong>
+            </p>
+
+            {candidate.missing_skills ? (
+              <p>{candidate.missing_skills}</p>
+            ) : (
+              <p>None</p>
+            )}
+
+            <p>
+              <strong>Recommendations:</strong>
+            </p>
+
+            {candidate.recommendations ? (
+              <p>{candidate.recommendations}</p>
+            ) : (
+              <p>No recommendations</p>
+            )}
 
           </div>
+          </details>
+        </td>
 
+            </tr>
+            ))}
+            </tbody>
+            </table>
+          </div>
         </div>
       )}
-
     </div>
   );
 }

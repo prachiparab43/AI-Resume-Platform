@@ -7,9 +7,10 @@ const allowRoles =
     require("../middleware/roleMiddleware");
 
 const {
-    createJD,
-    getRankings,
-    getAllJobs
+  createJD,
+  getRankings,
+  getAllJobs,
+  getMyJobs,
 } = require("../controllers/jdController");
 
 const router = express.Router();
@@ -28,7 +29,12 @@ router.post(
     allowRoles("hr"),
     createJD
 );
-
+router.get(
+  "/my-jobs",
+  authMiddleware,
+  allowRoles("hr"),
+  getMyJobs
+);
 
 router.get(
     "/:id/rankings",

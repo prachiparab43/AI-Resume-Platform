@@ -444,3 +444,40 @@ exports.getAllJobs = (req, res) => {
     });
   });
 };
+exports.getMyJobs = (req, res) => {
+  try {
+    const hrId = req.user.user_id;
+
+    const sql = `
+      SELECT
+        jd_id,
+        title,
+        raw_text,
+        created_at
+      FROM JobDescriptions
+      WHERE hr_id = ?
+      ORDER BY created_at DESC
+    `;
+
+    db.query(sql, [hrId], (err, results) => {
+      if (err) {
+        console.error("Fetch HR jobs error:", err);
+
+        return res.status(500).json({
+          message: "Failed to fetch your jobs",
+        });
+      }
+
+      return res.status(200).json({
+        total_jobs: results.length,
+        jobs: results,
+      });
+    });
+  } catch (error) {
+    console.error("Get HR jobs error:", error);
+
+    return res.status(500).json({
+      message: "Failed to fetch your jobs",
+    });
+  }
+};

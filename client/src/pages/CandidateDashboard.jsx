@@ -9,57 +9,76 @@ function CandidateDashboard() {
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [jdId, setJdId] = useState("");
-  const selectedJob = jobs.find(
-  (job) => String(job.jd_id) === String(jdId)
-  
-);
-  const getATSStatus = (score) => {
-  const value = Number(score);
-
-  if (value >= 75) {
-    return {
-      text: "Strong Match",
-      className: "ats-strong",
-    };
-  }
-
-  if (value >= 50) {
-    return {
-      text: "Moderate Match",
-      className: "ats-moderate",
-    };
-  }
-
-  return {
-    text: "Needs Improvement",
-    className: "ats-low",
-  };
-};
-
 
   const [analysis, setAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
 
-  // Load all available jobs
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const response = await api.get("/jd");
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-        setJobs(response.data.jobs || []);
-      } catch (error) {
-        console.error("Failed to load jobs:", error);
+  // Find selected job
+  const selectedJob = jobs.find(
+    (job) => String(job.jd_id) === String(jdId)
+  );
 
-        setMessage(
-          error.response?.data?.message ||
-            "Failed to load available jobs"
-        );
-      } finally {
-        setLoadingJobs(false);
-      }
+  // ATS status helper
+  const getATSStatus = (score) => {
+    const value = Number(score);
+
+    if (value >= 75) {
+      return {
+        text: "Strong Match",
+        className: "ats-strong",
+      };
+    }
+
+    if (value >= 50) {
+      return {
+        text: "Moderate Match",
+        className: "ats-moderate",
+      };
+    }
+
+    return {
+      text: "Needs Improvement",
+      className: "ats-low",
     };
+  };
 
+  // Fetch candidate ATS history
+  const fetchHistory = async () => {
+    try {
+      setLoadingHistory(true);
+
+      const response = await api.get("/resume/history");
+
+      setHistory(response.data.history || []);
+    } catch (error) {
+      console.error("ATS history error:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Load available jobs
+  const fetchJobs = async () => {
+    try {
+      setLoadingJobs(true);
+
+      const response = await api.get("/jd");
+
+      setJobs(response.data.jobs || []);
+    } catch (error) {
+      console.error("Failed to load jobs:", error);
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  // Load jobs and history when dashboard opens
+  useEffect(() => {
     fetchJobs();
+    fetchHistory();
   }, []);
 
   const handleFileChange = (e) => {
@@ -70,8 +89,7 @@ function CandidateDashboard() {
     setUploadResult(null);
     setAnalysis(null);
   };
-
-  // Upload Resume
+ // Upload Resume
   const handleUpload = async (e) => {
     e.preventDefault();
 
@@ -318,128 +336,196 @@ function CandidateDashboard() {
 
       {/* ATS Results */}
 
-      {analysis && (
-        <div className="dashboard-card">
-          <h2>ATS Analysis Result</h2>
+{analysis && (
+  <div className="dashboard-card">
+    <h2>ATS Analysis Result</h2>
 
-          <div className="score-main">
-            <h1>{analysis.ats_score ?? 0}%</h1>
+    <div className="score-main">
+      <h1>{analysis.ats_score ?? 0}%</h1>
 
-            <p>Overall ATS Score</p>
+      <p>Overall ATS Score</p>
 
+      <span
+        className={`ats-status ${
+          getATSStatus(analysis.ats_score).className
+        }`}
+      >
+        {getATSStatus(analysis.ats_score).text}
+      </span>
+    </div>
+
+    <div className="score-grid">
+      <ScoreCard
+        title="Skill Match"
+        score={analysis.skill_match_pct}
+      />
+
+      <ScoreCard
+        title="Keyword Match"
+        score={analysis.keyword_match_pct}
+      />
+
+      <ScoreCard
+        title="Experience"
+        score={analysis.experience_match_pct}
+      />
+
+      <ScoreCard
+        title="Education"
+        score={analysis.education_match_pct}
+      />
+
+      <ScoreCard
+        title="Projects"
+        score={analysis.project_relevance_pct}
+      />
+
+      <ScoreCard
+        title="Completeness"
+        score={analysis.completeness_pct}
+      />
+    </div>
+
+    {/* Matched Skills */}
+
+    <h3>Matched Skills</h3>
+
+    <div className="skills-container">
+      {analysis.matched_skills?.length > 0 ? (
+        analysis.matched_skills.map(
+          (skill, index) => (
             <span
-              className={`ats-status ${
-                getATSStatus(analysis.ats_score).className
-              }`}
+              className="skill-tag"
+              key={`${skill}-${index}`}
             >
-              {getATSStatus(analysis.ats_score).text}
+              {skill}
             </span>
-          </div>
-
-          <div className="score-grid">
-            <ScoreCard
-              title="Skill Match"
-              score={analysis.skill_match_pct}
-            />
-
-            <ScoreCard
-              title="Keyword Match"
-              score={analysis.keyword_match_pct}
-            />
-
-            <ScoreCard
-              title="Experience"
-              score={
-                analysis.experience_match_pct
-              }
-            />
-
-            <ScoreCard
-              title="Education"
-              score={
-                analysis.education_match_pct
-              }
-            />
-
-            <ScoreCard
-              title="Projects"
-              score={
-                analysis.project_relevance_pct
-              }
-            />
-
-            <ScoreCard
-              title="Completeness"
-              score={analysis.completeness_pct}
-            />
-          </div>
-
-          {/* Matched Skills */}
-
-          <h3>Matched Skills</h3>
-
-          <div className="skills-container">
-            {analysis.matched_skills?.length > 0 ? (
-              analysis.matched_skills.map(
-                (skill, index) => (
-                  <span
-                    className="skill-tag"
-                    key={`${skill}-${index}`}
-                  >
-                    {skill}
-                  </span>
-                )
-              )
-            ) : (
-              <p>No matched skills.</p>
-            )}
-          </div>
-
-          {/* Missing Skills */}
-
-          <h3>Missing Skills</h3>
-
-          <div className="skills-container">
-            {analysis.missing_skills?.length > 0 ? (
-              analysis.missing_skills.map(
-                (skill, index) => (
-                  <span
-                    className="missing-skill"
-                    key={`${skill}-${index}`}
-                  >
-                    {skill}
-                  </span>
-                )
-              )
-            ) : (
-              <p>
-                No missing skills detected.
-              </p>
-            )}
-          </div>
-
-          {/* Recommendations */}
-
-          <h3>Recommendations</h3>
-
-          {analysis.recommendations?.length > 0 ? (
-            <ul>
-              {analysis.recommendations.map(
-                (recommendation, index) => (
-                  <li key={index}>
-                    {recommendation}
-                  </li>
-                )
-              )}
-            </ul>
-          ) : (
-            <p>No recommendations.</p>
-          )}
-        </div>
+          )
+        )
+      ) : (
+        <p>No matched skills.</p>
       )}
     </div>
-  );
+
+    {/* Missing Skills */}
+
+    <h3>Missing Skills</h3>
+
+    <div className="skills-container">
+      {analysis.missing_skills?.length > 0 ? (
+        analysis.missing_skills.map(
+          (skill, index) => (
+            <span
+              className="missing-skill"
+              key={`${skill}-${index}`}
+            >
+              {skill}
+            </span>
+          )
+        )
+      ) : (
+        <p>No missing skills detected.</p>
+      )}
+    </div>
+
+    {/* Recommendations */}
+
+    <h3>Recommendations</h3>
+
+    {analysis.recommendations?.length > 0 ? (
+      <ul>
+        {analysis.recommendations.map(
+          (recommendation, index) => (
+            <li key={index}>
+              {recommendation}
+            </li>
+          )
+        )}
+      </ul>
+    ) : (
+      <p>No recommendations.</p>
+    )}
+  </div>
+)}
+
+{/* ATS History */}
+
+<div className="dashboard-card">
+  <h2>My ATS History</h2>
+
+  {loadingHistory ? (
+    <p>Loading history...</p>
+  ) : history.length === 0 ? (
+    <p>
+      You have not analyzed any resumes yet.
+    </p>
+  ) : (
+    <div className="table-wrapper">
+      <table className="ranking-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>ATS Score</th>
+            <th>Skill Match</th>
+            <th>Keyword Match</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {history.map((item) => {
+            const status =
+              getATSStatus(item.ats_score);
+
+            return (
+              <tr key={item.result_id}>
+                <td>
+                  {item.job_title}
+                </td>
+
+                <td>
+                  <strong>
+                    {item.ats_score}%
+                  </strong>
+                </td>
+
+                <td>
+                  {item.skill_match_pct}%
+                </td>
+
+                <td>
+                  {item.keyword_match_pct}%
+                </td>
+
+                <td>
+                  <span
+                    className={`ats-status ${status.className}`}
+                  >
+                    {status.text}
+                  </span>
+                </td>
+
+                <td>
+                  {item.created_at
+                    ? new Date(
+                        item.created_at
+                      ).toLocaleDateString()
+                    : "-"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
+
+</div>
+);
 }
+
 function ScoreCard({ title, score }) {
   const safeScore = Math.min(
     100,

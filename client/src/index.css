@@ -314,3 +314,20 @@ body {
   border-radius: 20px;
   transition: width 0.4s ease;
 }
+.details-link {
+  cursor: pointer;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+.candidate-details {
+  margin-top: 10px;
+  min-width: 250px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.candidate-details p {
+  margin: 6px 0;
+}
