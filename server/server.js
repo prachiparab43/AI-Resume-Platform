@@ -18,12 +18,12 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "http://localhost:4173",
       "https://ai-resume-platform-kohl.vercel.app",
     ],
     credentials: true,
   })
 );
-
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/resume", resumeRoutes);
