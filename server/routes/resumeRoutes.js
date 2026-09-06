@@ -7,7 +7,8 @@ const allowRoles = require("../middleware/roleMiddleware");
 
 const {
     uploadResume,
-    analyzeResume
+    analyzeResume,
+    getCandidateHistory
 } = require("../controllers/resumeController");
 
 const router = express.Router();
@@ -56,6 +57,14 @@ router.post(
     upload.single("resume"),
     uploadResume
 );
+
+router.get(
+    "/history",
+    authMiddleware,
+    allowRoles("candidate"),
+    getCandidateHistory
+);
+
 router.post(
     "/:id/analyze",
     authMiddleware,

@@ -151,8 +151,12 @@ function CandidateDashboard() {
 
       setAnalysis(response.data.analysis);
 
+      // Refresh ATS history after successful analysis
+      await fetchHistory();
+
       setMessage(
         "ATS analysis completed successfully"
+      
       );
     } catch (error) {
       console.error("ATS analysis error:", error);
