@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
 const express = require("express");
@@ -12,6 +14,12 @@ const jdRoutes = require("./routes/jdRoutes");
 
 const app = express();
 
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 app.use(express.json());
 
 app.use(
@@ -24,6 +32,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/resume", resumeRoutes);
