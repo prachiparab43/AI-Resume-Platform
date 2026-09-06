@@ -11,8 +11,19 @@ const resumeRoutes = require("./routes/resumeRoutes");
 const jdRoutes = require("./routes/jdRoutes");
 const app = express();
 
-app.use(cors());
+
 app.use(express.json());
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://ai-resume-platform-kohl.vercel.app",
+    ],
+    credentials: true,
+  })
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
