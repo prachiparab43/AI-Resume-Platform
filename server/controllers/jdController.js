@@ -15,7 +15,7 @@ exports.createJD = async (req, res) => {
 
         // Send JD to Python NLP service
         const nlpResponse = await axios.post(
-            "http://127.0.0.1:8000/nlp/extract-jd",
+            `${process.env.NLP_SERVICE_URL}/nlp/extract-jd`,
             {
                 text: raw_text
             }

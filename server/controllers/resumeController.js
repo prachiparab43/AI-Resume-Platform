@@ -23,7 +23,7 @@ exports.uploadResume = async (req, res) => {
         );
 
         const nlpResponse = await axios.post(
-            "http://127.0.0.1:8000/nlp/parse-resume",
+            `${process.env.NLP_SERVICE_URL}/nlp/parse-resume`,
             formData,
             {
                 headers: formData.getHeaders()
@@ -217,7 +217,7 @@ exports.analyzeResume = async (req, res) => {
                         try {
                             // Send resume + JD to Python
                             const nlpResponse = await axios.post(
-                                "http://127.0.0.1:8000/nlp/match",
+                                `${process.env.NLP_SERVICE_URL}/nlp/match`,
                                 {
                                     resume_text:
                                         resume.raw_text || "",
